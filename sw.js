@@ -1,4 +1,4 @@
-const CACHE='career-evidence-drive-v2.2-json-sync';
+const CACHE='career-evidence-drive-v2.2-warm-neutral';
 const ASSETS=['./','./index.html','./app.js','./sync.js','./drive-sync.js','./manifest.json'];
 const allowed=new Set(ASSETS.map(p=>new URL(p,self.registration.scope).href));
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});

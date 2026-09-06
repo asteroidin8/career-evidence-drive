@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0d0f" />
+  <meta name="theme-color" content="#f7f6f3" />
   <title>나의 업무 기록</title>
   <link rel="manifest" href="manifest.json" />
   <style>
@@ -18,7 +18,47 @@
     @media(max-width:520px){.grid2,.drive-grid{grid-template-columns:1fr}.value-grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:1fr 1fr 1fr}.actions button{min-width:0}.app{padding-left:12px;padding-right:12px}}
   
 :root{--bg:#f7f8fa;--card:#fff;--card2:#eef1f5;--line:#dce2e9;--muted:#536173;--accent:#1d6453;--info:#175dad;--warn:#715414;color-scheme:light}body{background:var(--bg);color:#172334;font-size:16px;line-height:1.65}.app{max-width:680px;padding-bottom:100px}header{padding:20px 0}h1{font-size:24px}.card{box-shadow:none;border-radius:18px}.notice{background:#eef3f7;color:#405366;border-color:#dce2e9;font-size:13px}.notice.good{background:#eaf5ee;color:#24583f}.notice.warn{background:#fff5df;color:#715414}input,textarea,select{background:white;color:#172334;font-size:16px;border-color:#bbc7d4}textarea{min-height:96px}button{min-height:44px}.primary{background:#1d6453;color:white}.secondary,.chip,.value{background:#f4f6f8;color:#344255;border-color:#d1dae3}.chip.selected,.value.selected{background:#e4f2ed;color:#164f41;border-color:#1d6453}.info{background:#eaf1fc;color:#194f93}.tag,.preview{color:#344255}.tag.info{background:#eaf1fc;color:#194f93}.badge{background:#e9edf2;color:#485668}.badge.connected{background:#e4f2ed;color:#164f41}.extra{margin:18px 0}.extra>summary{padding:10px 0;color:#425a71}.ai-box{background:#f0f5fa;border-color:#cfdeeb}.ai-box h3{color:#254b6d}nav{background:#fff;border-top:1px solid #dce2e9}nav button{color:#536173}nav button.active{color:#164f41;background:#e4f2ed}:focus-visible{outline:3px solid #176cd0;outline-offset:3px}#syncConflicts pre{font-size:13px;background:#f5f6f8;padding:12px;overflow-wrap:anywhere}.danger{background:#fff0f0;color:#973434}.stats{margin-top:8px}
-nav button{white-space:nowrap;font-size:14px;padding:12px 6px}header h1{font-size:22px}header .sub{font-size:12px}</style>
+nav button{white-space:nowrap;font-size:14px;padding:12px 6px}header h1{font-size:22px}header .sub{font-size:12px}
+/* Warm neutral palette for focused writing. */
+:root{--bg:#f7f6f3;--card:#fff;--card2:#f1f0ed;--text:#37352f;--muted:#78756e;--line:#e8e6e1;--accent:#37352f;--danger:#a0443d;--warn:#806437;--info:#526878}
+body{background:var(--bg);color:var(--text)}
+h1,.section-title,.item-title,.stat b,label{color:#37352f}
+.sub,.hint,.small,.meta,.empty,.muted,.review-head,summary{color:#716e67}
+input,textarea,select{background:#fff;color:#37352f;border-color:#dedbd5}
+input::placeholder,textarea::placeholder{color:#89857e}
+input:focus,textarea:focus,select:focus{border-color:#8a857b}
+:focus-visible{outline:2px solid #86775f;outline-offset:3px}
+.card,.item,.stat,.sheet{background:#fff;border-color:#e8e6e1;box-shadow:0 1px 2px #37352f04}
+.primary{background:#37352f;color:#fff}
+.primary:hover{background:#25241f}
+.secondary,.chip,.value{background:#f7f6f3;color:#504c44;border-color:#dedbd5}
+.secondary:hover,.chip:hover,.value:hover{background:#eeece7}
+.chip.selected,.value.selected{background:#e9e6df;color:#37352f;border-color:#a29a8b}
+.notice{background:#f0efeb;border-color:#e5e2db;color:#686258}
+.notice.good{background:#edf0e9;border-color:#dce3d5;color:#526047}
+.notice.warn{background:#f5efe3;border-color:#e8ddc6;color:#786039}
+.info,.tag.info{background:#eaf0f2;border-color:#d9e1e4;color:#4e6573}
+.danger{background:#f8eeeb;border-color:#e9d8d2;color:#964a40}
+.badge{background:#efede8;border-color:#e2ded7;color:#6a645a}
+.badge.connected{background:#edf0e9;border-color:#dce3d5;color:#526047}
+.tag{background:#efede8;color:#635d52}
+.tag.good{background:#e9eee4;color:#506143}
+.tag.high{background:#f3ead8;color:#786037}
+.preview{color:#504c44}
+nav{background:rgba(250,249,247,.97);border-color:#e3dfd7}
+nav button{color:#777168}
+nav button.active{background:#eae7e1;color:#37352f}
+nav button:hover{background:#f0ede8}
+.extra>summary{color:#70675b}
+.ai-box{background:#f6f5f1;border-color:#e3dfd5}
+.ai-box h3{color:#62594b}
+.bar{background:#ece9e3}
+.bar i{background:#9b9384}
+.divider{background:#e8e6e1}
+.modal{background:rgba(42,39,33,.38)}
+.linklike{color:#526878}
+#syncConflicts pre{background:#f3f1ec;color:#504c44}
+</style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
