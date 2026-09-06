@@ -1,5 +1,5 @@
-const CACHE='career-evidence-drive-v2.1-auth';
-const ASSETS=['./','./index.html','./app.js','./manifest.json'];
+const CACHE='career-evidence-drive-v2.2-json-sync';
+const ASSETS=['./','./index.html','./app.js','./sync.js','./drive-sync.js','./manifest.json'];
 const allowed=new Set(ASSETS.map(p=>new URL(p,self.registration.scope).href));
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
 self.addEventListener('activate',e=>e.waitUntil(Promise.all([clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('career-evidence-drive-')&&k!==CACHE).map(k=>caches.delete(k))))])));

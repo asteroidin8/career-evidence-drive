@@ -1,96 +1,75 @@
-# Career Evidence — Google Drive Sync v2.1
+# 나의 업무 기록 — v2.2
 
-## 핵심 흐름
+빠르게 업무 기록을 남기고, 구글 드라이브로 여러 기기의 기록과 피드백을 합치는 개인용 앱입니다.
 
-1. 앱에서 원본 기록 작성
-2. 저장 시 브라우저 LocalStorage에 즉시 저장
-3. Google Drive가 연결되어 있으면 같은 기록을 Markdown 파일로 Drive의 `Career Evidence` 폴더에 저장
-4. 전체 JSON 백업(`career-evidence-backup.json`)도 Drive에 갱신
-5. ChatGPT는 Drive의 Markdown 원본을 읽고, 원본을 덮어쓰지 않은 채 구조화된 `CAREER_EVIDENCE_AI_REVIEW` 댓글을 작성
-6. 앱의 `AI 검토본만 새로고침`을 누르면 댓글을 읽어서 앱의 AI 피드백/수정본 영역에 반영
-7. 반영된 AI 검토본은 다시 Markdown 파일에도 기록
+## 매일 사용하는 방법
 
-이 구조는 **원본은 앱만 수정하고, ChatGPT는 댓글만 작성**하므로 충돌 위험을 낮춥니다.
+1. **기록하기**에서 제목·상황·내가 한 행동·결과를 적고 저장합니다. 태그와 숫자는 선택 항목입니다.
+2. **백업**에서 구글 드라이브를 연결하면 자동으로 기록을 가져온 뒤 새 기록을 백업합니다. 연결된 상태에서 저장해도 자동 동기화합니다.
+3. **내 기록 → 보기**에서 원본, 피드백, 다듬은 글을 확인합니다. 앱을 열고 연결해 두면 1분마다 새 내용을 확인합니다.
+4. 이 사용자의 Codex 작업에는 **매일 오전 6시(한국 시간) 검토**가 별도로 등록되어 있습니다. 웹앱 자체가 AI를 실행하는 것은 아닙니다. 다른 사람이 이 소스를 배포해도 예약은 함께 복제되지 않습니다.
 
-## Google OAuth 설정 — 최초 1회
+자동 검토는 Codex와 연결된 Google Drive를 사용합니다. 이 컴퓨터와 Codex 앱을 켜 두는 것이 필요하며, 예약 실행·계정 사용량·연결 권한에 따라 지연되거나 사용자 조치가 필요할 수 있습니다. 완성된 피드백은 웹앱의 다음 연결 또는 동기화 때 반영됩니다. 컴퓨터가 꺼져도 휴대폰 웹앱의 로컬 저장과 직접 Drive 백업은 별개로 동작합니다.
 
-이 버전은 정적 브라우저 앱입니다. Google Drive API를 쓰려면 본인 Google Cloud 프로젝트의 **OAuth Web Client ID**가 필요합니다.
+## 처음 연결하기
 
-1. Google Cloud Console에서 프로젝트 생성 또는 선택
-2. `Google Drive API` 활성화
-3. OAuth 동의 화면 구성
-   - 개인 사용이면 Testing 상태로 두고 본인 Google 계정을 Test user로 추가해도 됨
-4. OAuth Client 생성 → Application type: `Web application`
-5. Authorized JavaScript origins에 실제 배포 주소 추가
-   - 예: `https://career-evidence.vercel.app`
-6. 생성된 `...apps.googleusercontent.com` Client ID를 앱의 `동기화` 탭에 입력
-7. `Google Drive 연결` 클릭 후 권한 승인
+기존과 같은 HTTPS 주소에 배포해야 해당 브라우저의 로컬 기록과 설정이 유지됩니다. 사이트 데이터를 삭제하지 마세요.
 
-### 중요
+Google Cloud에서 Drive API를 활성화하고 **Web application OAuth Client ID**를 만듭니다. 실제 배포 주소의 origin을 Authorized JavaScript origins에 등록하고, Testing 상태라면 본인을 테스트 사용자로 추가합니다. 앱의 **백업 → 처음 연결할 때 설정**에 Client ID를 저장한 뒤 연결합니다. 기존에 저장한 Client ID는 유지됩니다.
 
-- OAuth는 `file://` 로 직접 연 HTML에서 안정적으로 동작하지 않습니다. **HTTPS로 배포**해야 합니다.
-- Vercel 같은 정적 호스팅에 이 폴더 전체를 배포하면 됩니다.
-- 앱은 `https://www.googleapis.com/auth/drive.file` 권한만 요청합니다. 이는 이 앱이 사용하는 특정 Drive 파일을 만들고 편집하기 위한 제한 범위입니다.
-- Access Token은 LocalStorage에 저장하지 않고 현재 페이지 메모리에만 유지합니다. 새로고침 시 이전 연결 설정을 바탕으로 무음 토큰 재요청을 시도합니다. 자동 복구가 불가능하면 `Google Drive 다시 연결`을 누르세요.
+권한은 기존 `drive.file`만 사용합니다. 이 앱이 만든 파일 또는 이 앱에 접근이 허용된 파일을 읽고 쓸 수 있습니다. **다른 도구가 만든 파일은 같은 폴더 안에 있어도 이 앱에 보이지 않을 수 있습니다.** 이 경우 Drive에서 백업 JSON을 내려받아 **백업 파일 가져오기**로 넣으세요. 기존 목록과 합치며 일괄 교체하지 않습니다. 기존 v2 Markdown 및 `raw_original` JSON도 지원합니다. 권한을 임의로 전체 Drive 접근으로 넓히지 않습니다.
 
-## ChatGPT 검토 방법
+## 새로고침과 연결 해제
 
-앱의 `동기화` 탭에서 `ChatGPT 검토 요청문 복사`를 누른 뒤 ChatGPT에 붙여넣습니다. 실제 원문을 복사할 필요는 없습니다.
+공개 Client ID와 재연결 여부만 LocalStorage에 저장합니다. 비밀번호, Client Secret, refresh token, access token은 저장소에 보관하지 않습니다. 토큰은 메모리에 유지하며 새로고침 시 GIS OAuth token flow로 `prompt:'none'` 재요청을 시도합니다. 브라우저 팝업 정책이나 Google 로그인 상태 때문에 실패할 수 있으며, 그때 **구글 드라이브 다시 연결**을 누르면 됩니다. 처음 업데이트 후 한 번은 직접 연결해야 합니다.
 
-ChatGPT가 Drive 파일에 아래 마커로 시작하는 댓글을 만들면 앱이 읽을 수 있습니다.
+토큰 만료 또는 401 응답 시 재연결 안내를 표시합니다. 연결 해제는 자동 재연결도 끕니다. Google 전체 로그아웃이나 OAuth 권한 철회는 아닙니다.
 
-```text
-CAREER_EVIDENCE_AI_REVIEW
-{...JSON...}
+## 양방향 동기화와 데이터 보존
+
+- **Drive에만 있는 기록 → 앱:** 폴더 안의 접근 가능한 JSON을 모두 조회한 뒤 최신 버전을 가져옵니다. 파일 목록은 다음 페이지까지 확인합니다.
+- **앱에서 새로 쓰거나 수정한 기록 → Drive:** JSON으로 새 버전을 저장합니다. 새 Markdown은 생성하지 않습니다.
+- **양쪽 동시 수정:** 시간을 비교해 임의로 덮어쓰지 않습니다. 백업 탭에서 앱 내용과 Drive 내용을 보여주고 다음 버전으로 사용할 내용을 선택하게 합니다. 선택 전 내용을 별도 로컬 보관하고 Drive의 과거 버전도 유지합니다.
+- **기존 백업과 형식 오류:** 가져오기 단계가 실패하면 업로드를 중단합니다. 빈 배열 백업으로 로컬 목록을 비우지 않습니다.
+- **삭제:** 삭제는 해당 기기에서만 적용합니다. Drive 파일을 지우지 않으며 다음 동기화에 다시 나타날 수 있습니다. 원격 삭제도 로컬 기록을 지우지 않습니다. 삭제까지 전파하는 미러링은 지원하지 않습니다.
+- **오프라인:** 기기에 먼저 저장하고 다음 연결 시 동기화합니다. 저장소 용량 부족은 브라우저 오류로 표시될 수 있으므로 JSON 내보내기도 유지하세요.
+
+## JSON 버전 형식
+
+하나의 전체 백업 파일을 여러 기기가 덮어쓰는 대신 **변경된 기록마다 새 JSON 버전 파일**을 추가합니다. 따라서 Drive에는 같은 기록의 여러 버전이 남으며 앱에서는 이전 버전을 제외한 최신 내용만 보여줍니다. 동일 내용의 중복 업로드는 합쳐 처리합니다. 버전 파일을 임의로 정리하면 최신 판별이나 복원이 달라질 수 있으므로 앱 사용 중 삭제하지 마세요.
+
+```json
+{
+  "format": "career-evidence-record-v3",
+  "id": "기록의 고정 식별자",
+  "parents": ["이전 버전의 SHA-256 키"],
+  "record": {
+    "date": "2026-09-06",
+    "process": "업무 제목",
+    "situation": "상황",
+    "action": "행동",
+    "result": "결과",
+    "followUp": "후속 확인"
+  }
+}
 ```
 
-## 파일 구조
+전체 필드는 `sync.js`의 `clean()`에 정의합니다. 버전 키는 정규화된 `{id, parents: 정렬된 배열, record}`의 JSON 문자열을 SHA-256으로 계산합니다. 다른 버전의 parents에 들어간 키는 이전 버전입니다. 과거 v2의 `career-evidence-backup.json`과 Markdown은 읽기/마이그레이션용으로 보존하며 더 이상 덮어쓰지 않습니다. 전체 기록은 앱의 **JSON 백업** 버튼으로 내보낼 수 있습니다.
 
-Drive에는 대략 다음처럼 저장됩니다.
+현재 폴더의 파일 총 크기가 10MB를 넘으면 전체 읽기 대신 오류를 표시하고 업로드를 중단합니다. 대규모 기록에 대한 증분 동기화와 과거 버전 정리는 향후 작업입니다. 동기화는 실시간 공동 편집이 아니며, 앱이 열려 있고 연결되어 있어야 주기적으로 실행됩니다.
 
-```text
-Career Evidence/
-├─ 2026-09-06_교환 건 CS 처리.md
-├─ 2026-09-XX_다른 기록.md
-└─ career-evidence-backup.json
-```
+## 자동 검토 댓글 계약
 
-## 데이터 안전
+Codex는 최신 JSON 원본을 수정하지 않고 그 파일에 댓글을 남깁니다. 중복·충돌을 확인한 후 `CAREER_EVIDENCE_AI_REVIEW` 한 줄 다음에 JSON을 기록합니다. 필드는 `entryId`, `reviewedOriginal`, `reviewedAt`, `status`, `feedback`, `revision`, `recommendedSkills`, `recommendedValue`, `portfolioNote`입니다.
 
-회사 기밀, 고객 개인정보, 주문번호, 사번, 내부 시스템 캡처는 저장하지 마세요. 외부 이직 포트폴리오에 재사용할 수 있도록 익명화된 사실과 본인의 행동·결과 중심으로 기록하는 것을 권장합니다.
+`entryId`는 파일의 최상위 id입니다. `reviewedOriginal`은 검토한 record의 situation/action/result/followUp을 정확히 복사한 객체입니다. 앱은 원본 일치 여부를 확인해 오래된 피드백이 수정된 원문에 붙지 않게 합니다. `revision` 역시 situation/action/result/followUp 문자열 객체입니다. 원본과 AI 수정본은 별도 필드로 유지됩니다.
 
+## 확인한 범위
 
-## v2.1 — 새로고침 후 인증 복구
+모의 Drive로 두 기기의 업로드·복원·수정·충돌·해결·피드백 전파·재시도·중복 방지·오프라인·형식 오류·목록 페이지 처리와 기존 백업 가져오기를 검증했습니다. 브라우저에서 한국어 입력 화면, 로컬 저장 및 새로고침 후 보존을 확인했습니다. 실제 Google 계정 OAuth와 실제 Drive 쓰기, 예약 검토의 첫 실행은 별도 확인이 필요합니다.
 
-- 기존 OAuth Client ID 저장 키와 경력 기록 저장 키를 유지했습니다. 기존 화면 구성, 원본/AI 검토 구분, Markdown 업로드와 JSON 백업 방식은 유지합니다.
-- 성공적으로 연결하면 공개 Client ID와 자동 재연결 여부(`reconnectEnabled`)를 LocalStorage에 저장합니다. 액세스 토큰은 메모리에만 보관합니다. 비밀번호, Client Secret, refresh token은 저장하지 않습니다.
-- 업데이트 후 처음 한 번은 연결 버튼을 눌러야 합니다. 이전 v2에는 연결 여부 저장 값이 없으므로 Client ID만 있다고 자동 인증을 실행하지 않습니다.
-- 이후 새로고침 시 Google 인증 라이브러리를 최대 10초 기다리고, GIS OAuth token flow의 `requestAccessToken({prompt:'none'})`을 한 번 시도합니다. 성공하면 새 토큰으로 저장/동기화할 수 있습니다.
-- 이는 항상 성공하는 백그라운드 로그인 보장이 아닙니다. GIS 토큰 흐름은 팝업을 사용할 수 있어 브라우저의 팝업 정책, 쿠키 정책, Google 로그인/동의 상태에 따라 실패합니다. 실패하거나 12초 동안 응답이 없으면 기존 버튼이 `Google Drive 다시 연결`로 표시됩니다. 버튼을 직접 누르면 사용자 동작으로 다시 요청합니다.
-- 만료 30초 전 또는 Drive의 401 응답 시 토큰을 버리고 재연결 안내를 표시합니다. 실패한 업로드를 자동 반복하지 않습니다. 재연결 후 `Drive 동기화`로 로컬 기록을 업로드하세요.
-- 복구 요청 진행 중 저장한 기록은 먼저 로컬에 저장하고, 복구 결과를 기다린 뒤 성공한 경우 Drive에 저장합니다. 복구 시작 전 또는 미연결 상태에 저장한 기록은 나중에 `Drive 동기화`로 올리세요.
-- `연결 해제`는 메모리 토큰과 자동 재연결 설정을 해제합니다. Google 전체 로그아웃이나 OAuth 권한 철회는 아니며, 기록 및 Drive 파일은 삭제하지 않습니다.
-- 다른 Client ID를 저장하면 현재 토큰과 폴더/전체 백업 식별자를 초기화합니다. 개별 기록의 기존 Drive 파일 ID는 보존합니다. 다른 계정/프로젝트로 바꾸면 해당 파일 권한이 없어 동기화가 실패할 수 있습니다.
-- 브라우저 저장소 삭제, 시크릿 모드 종료, 다른 브라우저나 다른 사이트 주소에서는 설정이 이어지지 않습니다. 로컬 기록 보존을 위해 기존 배포 주소에서 업데이트하세요.
-- 서비스 워커 캐시는 공개 앱 파일만 대상으로 제한했습니다. OAuth 및 Drive 응답은 캐시하지 않으며 이전 앱 캐시는 업데이트 시 제거됩니다.
+테스트 실행: 이 폴더에서 `node tests/sync.test.cjs`.
 
-## 배포 및 실제 계정 확인
-
-이 폴더의 파일을 기존 HTTPS 배포에 덮어쓰세요. 설치된 앱이 이전 코드를 보여주면 온라인 상태에서 앱을 닫았다가 다시 열고 새로고침하세요. 사이트 데이터 삭제는 로컬 기록을 지우므로 업데이트 방법으로 사용하지 마세요.
-
-1. 동기화 탭에서 저장된 Client ID를 확인하고 Drive를 연결합니다.
-2. 테스트 기록을 저장하고 Drive에서 Markdown 원문과 전체 JSON 백업의 내용이 일치하는지 확인합니다.
-3. 새로고침 후 `DRIVE ON`으로 복구되는지 확인합니다. 자동 복구가 막히면 `다시 연결` 버튼으로 복구합니다.
-4. 같은 기록을 수정·저장하고 Drive 파일이 갱신되는지 확인합니다.
-5. `Drive 동기화` 및 `AI 검토본만 새로고침`을 실행합니다.
-6. 연결 해제 후 새로고침하면 자동 연결되지 않는지 확인합니다.
-
-## 이번 검증 범위
-
-Node 기반 모의 DOM/GIS/Drive 응답 테스트 통과: 새로고침의 무음 요청, 팝업 실패와 재연결, 연결 해제 후 늦은 응답 무시, 타임아웃, 권한 부족, Client ID 변경, 토큰 만료 및 401, Markdown 생성 업로드, JSON 백업 내용, AI 댓글 조회 경로.
-
-실제 Google 계정 로그인, 실제 Drive 저장 및 브라우저별 팝업 동작은 이 작업에서 검증하지 않았습니다. 위 절차로 배포 후 확인해야 합니다. 서버 배포는 수행하지 않았습니다.
-
-공식 참고:
-- https://developers.google.com/identity/oauth2/web/reference/js-reference
-- https://developers.google.com/identity/oauth2/web/guides/use-token-model
+Google 설정 참고: https://developers.google.com/identity/oauth2/web/reference/js-reference
+Drive 범위 참고: https://developers.google.com/workspace/drive/api/guides/api-specific-auth
+예약 작업 참고: https://learn.chatgpt.com/docs/automations
