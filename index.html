@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d0f" />
+  <title>Career Evidence</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root{--bg:#0b0d0f;--card:#14181c;--card2:#1a2025;--text:#f3f6f8;--muted:#9da8b0;--line:#283039;--accent:#68f08f;--danger:#ff7a7a;--warn:#ffd66b;--info:#7cc8ff}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}button,input,select,textarea{font:inherit}button{cursor:pointer}.app{max-width:760px;margin:0 auto;min-height:100vh;padding:18px 16px 110px}
+    header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:8px 0 18px}h1{font-size:24px;margin:0 0 4px}.sub{color:var(--muted);font-size:13px}.badge{border:1px solid var(--line);border-radius:999px;padding:7px 10px;color:var(--warn);font-size:12px;white-space:nowrap}.badge.connected{color:var(--accent);border-color:#31563d}
+    nav{position:fixed;z-index:20;left:50%;bottom:14px;transform:translateX(-50%);width:min(728px,calc(100% - 24px));display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:rgba(20,24,28,.94);backdrop-filter:blur(14px);padding:8px;border:1px solid var(--line);border-radius:18px}nav button{background:transparent;border:0;color:var(--muted);padding:11px;border-radius:12px;font-weight:700}nav button.active{background:var(--card2);color:var(--text)}
+    .view{display:none}.view.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}.section-title{font-size:15px;font-weight:800;margin:0 0 12px}.hint{font-size:12px;color:var(--muted);margin-top:6px}.small{font-size:12px;color:var(--muted)}label{display:block;font-size:13px;font-weight:700;margin:14px 0 7px}input,select,textarea{width:100%;background:#0f1316;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px;outline:none}textarea{min-height:94px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:#4b5d67}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{border:1px solid var(--line);background:#101418;color:var(--muted);border-radius:999px;padding:8px 11px;font-size:12px}.chip.selected{border-color:var(--accent);color:#0b0d0f;background:var(--accent);font-weight:800}.value-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.value{border:1px solid var(--line);background:#101418;color:var(--muted);border-radius:12px;padding:10px 6px}.value.selected{background:var(--accent);color:#0b0d0f;border-color:var(--accent);font-weight:800}details{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}summary{cursor:pointer;color:var(--muted);font-weight:700;font-size:13px}
+    .primary{width:100%;border:0;border-radius:14px;padding:14px;background:var(--accent);color:#071008;font-weight:900;margin-top:16px}.secondary{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:12px;padding:10px 12px;font-weight:700}.danger{border:1px solid #5f3333;background:#241516;color:#ffaaaa;border-radius:12px;padding:10px 12px}.info{border:1px solid #30566d;background:#10202b;color:#a7dcff;border-radius:12px;padding:10px 12px;font-weight:700}.notice{background:#121718;border:1px solid #2b3934;border-radius:14px;padding:12px 13px;color:#b8c8c0;font-size:12px;margin-bottom:14px}.notice.warn{border-color:#594d24;color:#ead58a;background:#1a1710}.notice.good{border-color:#31563d;color:#bce9c8;background:#101a13}.toolbar{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:12px}.empty{text-align:center;padding:34px 12px;color:var(--muted)}
+    .item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}.item-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.item-title{font-weight:900}.meta{font-size:12px;color:var(--muted);margin-top:3px}.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.tag{font-size:11px;padding:5px 8px;border-radius:999px;background:var(--card2);color:#c5ced4}.tag.good{color:#071008;background:var(--accent)}.tag.high{color:#271a00;background:var(--warn)}.tag.info{color:#061623;background:var(--info);border:0;padding:5px 8px}.preview{margin-top:10px;font-size:13px;color:#d6dde1;white-space:pre-wrap}.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.actions button{flex:1;min-width:90px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}.stat b{font-size:22px;display:block}.stat span{font-size:11px;color:var(--muted)}.bar{height:9px;background:#0e1215;border-radius:999px;overflow:hidden;margin-top:6px}.bar i{height:100%;display:block;background:var(--accent);border-radius:999px}.review-row{margin:12px 0}.review-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:flex-end;z-index:50}.modal.show{display:flex}.sheet{width:min(760px,100%);margin:0 auto;background:var(--card);border-radius:22px 22px 0 0;padding:18px 16px 30px;max-height:90vh;overflow:auto;border:1px solid var(--line)}.sheet-head{display:flex;justify-content:space-between;align-items:center}.close{border:0;background:transparent;color:var(--muted);font-size:24px}.sheet p{white-space:pre-wrap}.divider{height:1px;background:var(--line);margin:16px 0}.ai-box{background:#10171c;border:1px solid #274153;border-radius:14px;padding:13px;margin-top:12px}.ai-box h3{font-size:14px;margin:0 0 8px;color:#b8ddf4}.statusline{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--muted)}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;word-break:break-all}.drive-grid{display:grid;grid-template-columns:1fr auto;gap:8px}.sync-list{display:grid;gap:8px;margin-top:10px}.sync-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;border-top:1px solid var(--line);padding-top:9px}.sync-row:first-child{border-top:0;padding-top:0}.linklike{color:var(--info);text-decoration:none}.muted{color:var(--muted)}
+    @media(max-width:520px){.grid2,.drive-grid{grid-template-columns:1fr}.value-grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:1fr 1fr 1fr}.actions button{min-width:0}.app{padding-left:12px;padding-right:12px}}
+  </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div><h1>Career Evidence</h1><div class="sub">원본은 내가 기록하고, Drive를 통해 AI 검토본을 다시 받기</div></div>
+      <div id="driveBadge" class="badge">DRIVE OFF</div>
+    </header>
+
+    <section id="addView" class="view active">
+      <div class="notice">회사 기밀, 고객·직원 개인정보, 주문번호, 내부 화면 캡처는 저장하지 마세요. 기록은 외부 이직용 경력 증거로 재사용할 수 있는 수준으로 익명화하세요.</div>
+      <form id="entryForm" class="card">
+        <h2 class="section-title">원본 기록</h2>
+        <div class="grid2">
+          <div><label for="date">날짜</label><input id="date" type="date" required></div>
+          <div><label for="process">공정 / 업무 / 제목</label><input id="process" placeholder="예: 교환 건 CS 처리" required></div>
+        </div>
+        <label>유형</label><div id="typeChips" class="chips"></div>
+        <label for="situation">상황</label><textarea id="situation" placeholder="무슨 일이 있었는가?" required></textarea>
+        <label for="action">내가 한 행동</label><textarea id="action" placeholder="내가 구체적으로 무엇을 했는가?" required></textarea>
+        <label for="result">결과</label><textarea id="result" placeholder="그 행동 이후 무엇이 달라졌는가?" required></textarea>
+        <label for="followUp">후속 확인 / 다음 조치</label><textarea id="followUp" placeholder="아직 확인할 내용이나 다음 조치가 있다면 기록"></textarea>
+        <label>보여주는 역량</label><div id="skillChips" class="chips"></div>
+        <label>면접에서 쓸 가치</label><div id="valueGrid" class="value-grid"></div>
+        <details>
+          <summary>숫자 / 객관적 근거 추가</summary>
+          <label for="before">전</label><input id="before" placeholder="예: 회수입고 처리 불가로 업무 지연">
+          <label for="after">후</label><input id="after" placeholder="예: 조정입고 후 양품화 완료">
+          <label for="numbers">참고 숫자</label><textarea id="numbers" placeholder="예: 타 PPC 유사 문의 10건 이상"></textarea>
+        </details>
+        <input id="editId" type="hidden">
+        <button class="primary" type="submit" id="saveBtn">기록 저장</button>
+        <div id="saveStatus" class="hint"></div>
+      </form>
+    </section>
+
+    <section id="listView" class="view">
+      <div class="toolbar"><input id="search" placeholder="상황, 행동, 결과, AI 수정본 검색"><select id="filterType"><option value="">전체 유형</option></select></div>
+      <div id="entries"></div>
+    </section>
+
+    <section id="reviewView" class="view">
+      <div class="stats">
+        <div class="stat"><b id="totalCount">0</b><span>전체 기록</span></div>
+        <div class="stat"><b id="monthCount">0</b><span>이번 달</span></div>
+        <div class="stat"><b id="reviewedCount">0</b><span>AI 검토 완료</span></div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h2 class="section-title">Google Drive 연결</h2>
+        <div id="driveSetupNote" class="notice warn">Drive 연결 전입니다. 아래에 Google OAuth Web Client ID를 넣고 연결하세요. 앱은 <b>drive.file</b> 권한만 요청합니다.</div>
+        <label for="clientId">OAuth Web Client ID</label>
+        <div class="drive-grid"><input id="clientId" placeholder="xxxx.apps.googleusercontent.com"><button id="saveClientIdBtn" class="secondary" type="button">저장</button></div>
+        <div class="actions"><button id="connectDriveBtn" class="primary" style="margin-top:0" type="button">Google Drive 연결</button><button id="disconnectDriveBtn" class="secondary" type="button">세션 해제</button></div>
+        <div id="driveFolderInfo" class="hint"></div>
+        <div class="actions"><button id="syncDriveBtn" class="info" type="button">Drive 전체 동기화</button><button id="pullReviewsBtn" class="secondary" type="button">AI 검토본만 새로고침</button></div>
+        <div id="syncStatus" class="hint"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">ChatGPT 검토 흐름</h2>
+        <p class="hint">1) 앱에서 원본 저장 → Drive에 Markdown 백업 → 2) ChatGPT에게 최신 미검토 기록 검토 요청 → 3) ChatGPT가 Drive 파일에 구조화된 검토 댓글 작성 → 4) 이 앱에서 AI 검토본 새로고침.</p>
+        <button id="copyReviewRequestBtn" class="secondary" style="width:100%" type="button">ChatGPT 검토 요청문 복사</button>
+      </div>
+
+      <div class="card"><h2 class="section-title">이번 달 유형 분포</h2><div id="typeStats"></div></div>
+      <div class="card"><h2 class="section-title">로컬 백업 / 복원</h2><p class="hint">Drive와 별개로 JSON 백업도 유지합니다.</p><div class="actions"><button id="exportBtn" class="secondary" type="button">JSON 백업</button><button id="csvBtn" class="secondary" type="button">CSV 내보내기</button></div><input id="importFile" type="file" accept="application/json" style="display:none"><button id="importBtn" class="secondary" style="width:100%;margin-top:8px" type="button">JSON 복원</button></div>
+    </section>
+  </div>
+
+  <nav><button data-view="addView" class="active">기록</button><button data-view="listView">목록</button><button data-view="reviewView">동기화</button></nav>
+
+  <div id="modal" class="modal"><div class="sheet"><div class="sheet-head"><strong id="modalTitle">기록</strong><button class="close" id="closeModal">×</button></div><div id="modalBody"></div></div></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "Career Evidence",
+  "short_name": "Evidence",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0d0f",
+  "theme_color": "#0b0d0f",
+  "lang": "ko-KR",
+  "description": "물류·운영 경력 증거 기록 및 Google Drive 동기화 앱"
+}
