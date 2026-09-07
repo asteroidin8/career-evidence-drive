@@ -75,7 +75,7 @@ async function reconcile(candidates){
     }
     const remote=heads[0];
     if(local.syncResolution&&heads.every(r=>local.syncResolution.includes(r.key))){
-      update(local.id,{syncConflict:null,syncNeedsUpload:true,syncNative:remote.native,driveFileId:remote.fileId,driveFileName:remote.fileName,syncLegacyParents:[...new Set(versions.flatMap(r=>[r.key,...r.parents]))]});continue;
+      update(local.id,{syncId:remote.logicalId,syncConflict:null,syncNeedsUpload:true,syncNative:remote.native,driveFileId:remote.fileId,driveFileName:remote.fileName,syncLegacyParents:[...new Set(versions.flatMap(r=>[r.key,...r.parents]))]});continue;
     }
     const decision=SYNC.decide(local,heads);
     const refs=heads.map(remoteSummary);

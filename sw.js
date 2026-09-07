@@ -1,4 +1,4 @@
-const CACHE='career-evidence-drive-v3-storage-diagnostics';
+const CACHE='career-evidence-drive-v3-legacy-identity-fix';
 const ASSETS=['./','./index.html','./app.js','./sync.js','./drive-sync.js','./remote-cache.js','./manifest.json'];
 const allowed=new Set(ASSETS.map(p=>new URL(p,self.registration.scope).href));
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
