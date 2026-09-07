@@ -188,7 +188,7 @@ async function driveFetch(url,opts={}){
   if(Date.now()>=tokenExpiresAt){clearDriveAuth();updateDriveUi();throw new Error('DRIVE_TOKEN_EXPIRED')}
   const requestToken=driveToken;
   const headers=new Headers(opts.headers||{});headers.set('Authorization',`Bearer ${driveToken}`);
-  const res=await fetch(url,{...opts,headers});
+  let res;try{res=await fetch(url,{...opts,headers})}catch(e){const requestUrl=new URL(url);throw new Error('Drive 통신 실패 ('+(opts.method||'GET')+' '+requestUrl.pathname+(requestUrl.searchParams.get('alt')==='media'?' 본문':'')+'): '+e.message)}
   if(res.status===401){if(driveToken===requestToken){clearDriveAuth();updateDriveUi()}throw new Error('DRIVE_TOKEN_EXPIRED')}
   if(!res.ok){let detail='';try{detail=(await res.json())?.error?.message||''}catch{}throw new Error(`DRIVE_${res.status}:${detail}`)}
   const ct=res.headers.get('content-type')||'';return ct.includes('application/json')?res.json():res.text();
