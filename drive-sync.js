@@ -1,17 +1,26 @@
-// JSON-only writes. Immutable revisions avoid lost updates across devices.
+// Stable JSON files, conditional writes and disposable per-account body caches.
 let syncPromise=null, syncAgain=false, syncInterval=null;
 const SYNC=EvidenceSync;
-const MAX_SYNC_BYTES=10*1024*1024;
+const MAX_SYNC_BYTES=2*1024*1024;
+let remoteBodies=new Map(),remoteAccount='',remoteGeneration=-1;
+const reviewChecks=new Map();
+const forcedReviews=new Set();
 function syncStatus(message){$('#syncStatus').textContent=message}
 async function listDriveFiles(q){
   let pageToken='',out=[];
   do{
-    const page=await driveFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=nextPageToken,files(id,name,mimeType,size,modifiedTime)&pageSize=100${pageToken?'&pageToken='+encodeURIComponent(pageToken):''}`);
+    const page=await driveFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=nextPageToken,files(id,name,mimeType,size,modifiedTime,version)&pageSize=1000${pageToken?'&pageToken='+encodeURIComponent(pageToken):''}`);
     out.push(...(page.files||[]));pageToken=page.nextPageToken||'';
   }while(pageToken);
   return out;
 }
 async function readSyncFiles(){
+  if(remoteGeneration!==authGeneration){
+    const account=await driveFetch('https://www.googleapis.com/drive/v3/about?fields=user(permissionId)');
+    if(!account.user?.permissionId)throw Error('Drive 계정을 확인하지 못했습니다.');
+    remoteAccount=getCfg().clientId+':'+account.user.permissionId;
+    remoteGeneration=authGeneration;remoteBodies.clear();reviewChecks.clear();
+  }
   const folders=await listDriveFiles("name='Career Evidence' and mimeType='application/vnd.google-apps.folder' and trashed=false");
   const ids=new Set(folders.map(f=>f.id));if(getCfg().folderId)ids.add(getCfg().folderId);
   const files=new Map();
@@ -20,19 +29,23 @@ async function readSyncFiles(){
       if(/\.(json|md)$/i.test(f.name))files.set(f.id,f);
     }
   }
-  let total=0;const candidates=[];
+  const candidates=[];
   for(const f of files.values()){
-    total+=Number(f.size||0);if(total>MAX_SYNC_BYTES)throw Error('백업이 10MB를 초과합니다. 동기화를 중단했습니다.');
-    const body=await driveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(f.id)}?alt=media`);
+    if(Number(f.size||0)>MAX_SYNC_BYTES)throw Error(f.name+': 개별 기록이 2MB를 초과합니다.');
+    const cacheKey=remoteAccount+':'+f.id,version=String(f.version||f.modifiedTime||'');
+    const cached=remoteBodies.get(f.id)||await RemoteCache.get(cacheKey);
+    const body=version&&cached?.version===version?cached.body:await driveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(f.id)}?alt=media`);
     let parsed;
     try{parsed=/\.json$/i.test(f.name)?SYNC.parseJson(body):[SYNC.parseMarkdown(String(body),f.name)]}
     catch(e){throw Error(`${f.name}: ${e.message}. 파일을 확인한 뒤 다시 동기화하세요.`)}
     for(const p of parsed){
       p.logicalId=p.logicalId||'legacy-'+await SYNC.hash(p.record.date+'\n'+p.record.process);
       p.key=await SYNC.hash(JSON.stringify({id:p.logicalId,parents:[...p.parents].sort(),record:p.record}));
-      candidates.push({...p,fileId:f.id,fileName:f.name,modifiedTime:f.modifiedTime,native:body?.format==='career-evidence-record-v3'});
+      candidates.push({...p,fileId:f.id,fileName:f.name,modifiedTime:f.modifiedTime,native:body?.format==='career-evidence-record-v3',legacyParents:body?.legacyParents||[],storageVersion:body?.storageVersion});
     }
+    if(version){remoteBodies.set(f.id,{version,body});await RemoteCache.put(cacheKey,{version,body})}
   }
+  for(const id of remoteBodies.keys())if(!files.has(id))remoteBodies.delete(id);
   return candidates;
 }
 function setLocal(id,change){
@@ -41,61 +54,90 @@ function setLocal(id,change){
 }
 function remoteSummary(r){return {key:r.key,record:r.record,fileId:r.fileId,fileName:r.fileName,logicalId:r.logicalId}}
 async function reconcile(candidates){
-  const groups=new Map();
+  const groups=new Map(),locals=entries();
+  const identity=new Map(),titles=new Map();
+  for(const x of locals){for(const key of [x.id,x.syncId,x.driveFileId])if(key)identity.set(key,x);const title=x.date+'\n'+x.process;if(!titles.has(title))titles.set(title,x)}
+  const update=(id,change)=>{const x=identity.get(id);if(x)Object.assign(x,change)};
   // Prefer explicit identity. Title matching only attaches old records and never overwrites without a baseline.
   for(const r of candidates){
-    const local=entries().find(x=>x.syncId===r.logicalId||x.id===r.logicalId||x.driveFileId===r.fileId)
-      ||entries().find(x=>(!x.syncId||r.logicalId.startsWith('legacy-'))&&x.date===r.record.date&&x.process===r.record.process);
+    const title=titles.get(r.record.date+'\n'+r.record.process);
+    const local=identity.get(r.logicalId)||identity.get(r.fileId)||((!title?.syncId||r.logicalId.startsWith('legacy-'))?title:null);
     const group=local?.syncId||local?.id||r.logicalId;
     if(!groups.has(group))groups.set(group,[]);groups.get(group).push(r);
   }
   let downloaded=0,conflicts=0;
   for(const [id,versions] of groups){
     const heads=SYNC.heads(versions);
-    let local=entries().find(x=>x.syncId===id||x.id===id);
+    let local=identity.get(id);
     if(!local){
       // Local DOM identifiers never come from untrusted Drive data.
-      local={...heads[0].record,id:crypto.randomUUID(),syncId:id};saveEntries([...entries(),local]);downloaded++;
+      local={...heads[0].record,id:crypto.randomUUID(),syncId:id};locals.push(local);identity.set(id,local);identity.set(local.id,local);downloaded++;
     }
     const remote=heads[0];
     if(local.syncResolution&&heads.every(r=>local.syncResolution.includes(r.key))){
-      setLocal(local.id,{syncConflict:null,syncNeedsUpload:true});continue;
+      update(local.id,{syncConflict:null,syncNeedsUpload:true,syncNative:remote.native,driveFileId:remote.fileId,driveFileName:remote.fileName,syncLegacyParents:[...new Set(versions.flatMap(r=>[r.key,...r.parents]))]});continue;
     }
     const decision=SYNC.decide(local,heads);
     const refs=heads.map(remoteSummary);
     if(decision==='conflict'){
-      setLocal(local.id,{syncId:id,syncConflict:refs});conflicts++;continue;
+      update(local.id,{syncId:id,syncConflict:refs});conflicts++;continue;
     }
     if(decision==='download')downloaded++;
-    setLocal(local.id,{
+    update(local.id,{
       ...(decision==='download'?remote.record:{}),syncId:id,syncConflict:null,
       syncHeads:heads.map(r=>r.key),syncBase:decision==='upload'?local.syncBase:SYNC.signature(remote.record),
-      driveFileId:remote.fileId,driveFileName:remote.fileName,syncNeedsUpload:!remote.native
+      driveFileId:remote.fileId,driveFileName:remote.fileName,syncNeedsUpload:!remote.native,
+      syncNative:remote.native,syncLegacyParents:remote.storageVersion===4?remote.legacyParents:[...new Set(versions.flatMap(r=>[r.key,...r.parents]))]
     });
   }
+  saveEntries(locals);
   return {downloaded,conflicts};
 }
 async function uploadRevision(item){
-  const record=SYNC.clean(item),id=item.syncId||item.id,parents=[...(item.syncHeads||[])].sort();
+  const record=SYNC.clean(item),id=item.syncId||item.id;
+  const legacyParents=[...new Set(item.syncLegacyParents||[])];
+  const parents=[...new Set([...legacyParents,...(item.syncHeads||[])])].sort();
   const key=await SYNC.hash(JSON.stringify({id,parents,record}));
   const folder=await ensureDriveFolder();
-  const payload={format:'career-evidence-record-v3',id,parents,record};
-  const name=`${record.date}_${safeName(record.process)}_${key.slice(0,16)}.json`;
+  const payload={format:'career-evidence-record-v3',storageVersion:4,id,parents,legacyParents,record};
+  const name=`${record.date}_${safeName(record.process)}_${(await SYNC.hash(id)).slice(0,12)}.json`;
+  let file;
+  if(item.syncNative&&item.driveFileId){
+    // Read a stable snapshot, then require exactly that ETag at update time.
+    const url='https://www.googleapis.com/drive/v2/files/'+encodeURIComponent(item.driveFileId);
+    const before=await driveFetch(url+'?fields=id,etag');
+    const latest=await driveFetch(url+'?alt=media');
+    const after=await driveFetch(url+'?fields=id,etag');
+    if(!before.etag||before.etag!==after.etag)throw Error('Drive 내용이 변경되었습니다. 다시 동기화하세요.');
+    const parsed=SYNC.parseJson(latest)[0];
+    const latestKey=await SYNC.hash(JSON.stringify({id:parsed.logicalId,parents:[...parsed.parents].sort(),record:parsed.record}));
+    const expected=item.syncResolution||item.syncHeads||[];
+    if(parsed.logicalId!==id||!expected.includes(latestKey))throw Error('다른 기기의 수정이 감지되었습니다. 다시 동기화하여 확인하세요.');
+    file=await driveFetch('https://www.googleapis.com/upload/drive/v2/files/'+encodeURIComponent(item.driveFileId)+'?uploadType=media&newRevision=true&fields=id',{method:'PUT',headers:{'Content-Type':'application/json; charset=UTF-8','If-Match':after.etag},body:JSON.stringify(payload)});
+    remoteBodies.delete(item.driveFileId);
+  }else{
   const boundary='evidence_'+crypto.randomUUID();
   const body=new Blob([`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({name,parents:[folder],mimeType:'application/json'})}\r\n--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(payload,null,2)}\r\n--${boundary}--`]);
-  const file=await driveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Content-Type':`multipart/related; boundary=${boundary}`},body});
-  setLocal(item.id,{syncId:id,syncHeads:[key],syncBase:SYNC.signature(record),driveFileId:file.id,driveFileName:name,driveSyncedAt:nowIso(),syncConflict:null,syncResolution:null,syncNeedsUpload:false});
+  file=await driveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Content-Type':`multipart/related; boundary=${boundary}`},body});
+  }
+  setLocal(item.id,{syncId:id,syncHeads:[key],syncBase:SYNC.signature(record),driveFileId:file.id,driveFileName:item.syncNative?item.driveFileName:name,driveSyncedAt:nowIso(),syncConflict:null,syncResolution:null,syncNeedsUpload:false,syncNative:true,syncLegacyParents:legacyParents});
   if(entries().some(x=>x.id===item.id&&SYNC.signature(x)!==SYNC.signature(record)))syncAgain=true;
 }
 async function applyReviewComments(){
   let count=0;
-  for(const item of entries()){
+  const pending=entries().filter(item=>forcedReviews.has(item.id)||!item.aiFeedback||item.reviewStatus==='raw').sort((a,b)=>(reviewChecks.get(a.id)||0)-(reviewChecks.get(b.id)||0));
+  let checked=0;
+  for(const item of pending){
     if(!item.driveFileId||item.syncConflict)continue;
+    if(Date.now()-(reviewChecks.get(item.id)||0)<300000||checked>=20)continue;
+    checked++;
     let pageToken='',comments=[];
     do{
       const data=await driveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(item.driveFileId)}/comments?fields=nextPageToken,comments(id,content,createdTime,modifiedTime,deleted)&pageSize=100${pageToken?'&pageToken='+encodeURIComponent(pageToken):''}`);
       comments.push(...(data.comments||[]));pageToken=data.nextPageToken||'';
     }while(pageToken);
+    reviewChecks.set(item.id,Date.now());
+    forcedReviews.delete(item.id);
     const options=comments.filter(c=>!c.deleted).map(c=>({c,d:parseReviewComment(c.content,{id:item.syncId||item.id})})).filter(x=>x.d).sort((a,b)=>String(b.c.modifiedTime||b.c.createdTime).localeCompare(String(a.c.modifiedTime||a.c.createdTime)));
     const chosen=options[0];if(!chosen)continue;
     const {c,d}=chosen,stamp=c.id+':'+(c.modifiedTime||c.createdTime);
@@ -172,8 +214,9 @@ async function importBackupFile(file){
   else syncStatus(`${parsed.length}건 백업을 합쳤습니다. Drive 연결 시 자동 백업됩니다.`);
 }
 $('#syncDriveBtn').textContent='지금 양방향 동기화';
-$('#syncDriveBtn').onclick=()=>driveToken?scheduleSync():alert('먼저 Google Drive를 연결하세요.');
-$('#pullReviewsBtn').onclick=()=>driveToken?scheduleSync():alert('먼저 Google Drive를 연결하세요.');
+$('#syncDriveBtn').onclick=()=>{reviewChecks.clear();return driveToken?scheduleSync():alert('먼저 Google Drive를 연결하세요.')};
+$('#pullReviewsBtn').onclick=$('#syncDriveBtn').onclick;
+window.pullOneReview=id=>{forcedReviews.add(id);reviewChecks.delete(id);return driveToken?scheduleSync():alert('먼저 구글 드라이브에 연결해 주세요.')};
 $('#importFile').accept='.json,.md,application/json,text/markdown';
 $('#importBtn').textContent='JSON / Markdown 백업 가져오기 (기존 기록 유지)';
 $('#importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{await importBackupFile(f)}catch(err){syncStatus('가져오기 실패: '+err.message)}finally{e.target.value=''}};
